@@ -1,0 +1,436 @@
+service: rumor
+
+custom:
+  pythonRequirements:
+    dockerizePip: true
+  news_item_table_name: "rumor-${self:provider.stage}-news-items"
+  evaluation_report_table_name: "rumor-${self:provider.stage}-evaluation-reports"
+  preference_table_name: "rumor-${self:provider.stage}-preferences"
+  collection_queue_name: "rumor-${self:provider.stage}-collection-queue"
+  classification_queue_name: "rumor-${self:provider.stage}-classification-queue"
+  notification_topic_name: "rumor-${self:provider.stage}-notification-topic"
+
+plugins:
+  - serverless-python-requirements
+
+provider:
+  name: aws
+  runtime: python3.6
+  stage: production
+  region: eu-central-1
+  memorySize: 256
+  timeout: 6
+
+  environment:
+    RUMOR_NEWS_ITEM_MAX_AGE_HOURS: "48"
+    RUMOR_NEWS_ITEM_TABLE_NAME: "${self:custom.news_item_table_name}"
+    RUMOR_DISCOVERY_LIMIT: "100"
+    RUMOR_QUALIFICATION_LIMIT: "10"
+    RUMOR_QUALIFICATION_THRESHOLD: "1.5"
+    RUMOR_COLLECTION_QUEUE_NAME: "${self:custom.collection_queue_name}"
+    RUMOR_CLASSIFICATION_QUEUE_NAME: "${self:custom.classification_queue_name}"
+    RUMOR_EVALUATION_PERIOD_HOURS: "72"
+    RUMOR_EVALUATION_REPORT_TABLE_NAME: "${self:custom.evaluation_report_table_name}"
+    RUMOR_PREFERENCE_TABLE_NAME: "rumor-${self:provider.stage}-preferences"
+    RUMOR_INSPECTION_BATCH_SIZE: "10"
+    RUMOR_CLASSIFICATION_BATCH_SIZE: "10"
+    RUMOR_REPORT_PERIOD_HOURS: "24"
+    RUMOR_NOTIFICATION_TOPIC_NAME: "${self:custom.notification_topic_name}"
+
+  iamRoleStatements:
+    - Effect: "Allow"
+      Resource: "arn:aws:logs:*:*:*"
+      Action:
+        - "logs:CreateLogGroup"
+        - "logs:CreateLogStream"
+        - "logs:PutLogEvents"
+
+    - Effect: "Allow"
+      Resource:
+        - Fn::GetAtt:
+          - "CollectionQueue"
+          - "Arn"
+        - Fn::GetAtt:
+          - "ClassificationQueue"
+          - "Arn"
+      Action:
+        - "sqs:SendMessage"
+        - "sqs:GetQueueAttributes"
+        - "sqs:GetQueueUrl"
+        - "sqs:ReceiveMessage"
+        - "sqs:DeleteMessage"
+
+    - Effect: "Allow"
+      Resource:
+        - Fn::GetAtt:
+          - "NewsItemsTable"
+          - "Arn"
+        - Fn::GetAtt:
+          - "EvaluationReportsTable"
+          - "Arn"
+        - Fn::GetAtt:
+          - "PreferencesTable"
+          - "Arn"
+        - Fn::Join:
+          - ""
+          - - Fn::GetAtt:
+              - "NewsItemsTable"
+              - "Arn"
+            - "/index/*"
+      Action:
+        - "dynamodb:DescribeTable"
+        - "dynamodb:PutItem"
+        - "dynamodb:Query"
+        - "dynamodb:Scan"
+        - "dynamodb:ListTables"
+
+    - Effect: "Allow"
+      Resource:
+        "Ref": "NotificationTopic"
+      Action:
+        - "sns:Publish"
+        - "sns:GetTopicAttributes"
+
+    - Effect: "Allow"
+      Resource: "arn:aws:sns:*:*:*"
+      Action:
+        - "sns:ListTopics"
+
+package:
+  exclude:
+    - venv/**
+    - chaos_experiments/**
+    - .pytest_cache/**
+
+functions:
+  discovery:
+    handler: rumor.interfaces.handlers.discovery_handler
+    events:
+      - schedule: "cron(0 * * * ? *)"
+  inspection:
+    handler: rumor.interfaces.handlers.inspection_handler
+    timeout: 15
+    events:
+      - schedule: "cron(0-15 * * * ? *)"
+  classification:
+    handler: rumor.interfaces.handlers.classification_handler
+    timeout: 15
+    events:
+      - schedule: "cron(0-15 * * * ? *)"
+  evaluation:
+    handler: rumor.interfaces.handlers.evaluation_handler
+    events:
+      - schedule: "rate(72 hours)"
+  report:
+    handler: rumor.interfaces.handlers.report_handler
+    events:
+      - schedule: "cron(0 12 * * ? *)"
+
+resources:
+  Resources:
+    NewsItemsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: "${self:custom.news_item_table_name}"
+        AttributeDefinitions:
+          -
+            AttributeName: "created_at_date"
+            AttributeType: "S"
+          -
+            AttributeName: "news_item_id"
+            AttributeType: "S"
+          -
+            AttributeName: "created_at"
+            AttributeType: "N"
+        KeySchema:
+          -
+            AttributeName: "created_at_date"
+            KeyType: "HASH"
+          -
+            AttributeName: "news_item_id"
+            KeyType: "RANGE"
+        ProvisionedThroughput:
+          ReadCapacityUnits: "1"
+          WriteCapacityUnits: "1"
+        TimeToLiveSpecification:
+          AttributeName: "ttl"
+          Enabled: true
+        LocalSecondaryIndexes:
+        - IndexName: LSI
+          KeySchema:
+          - AttributeName: "created_at_date"
+            KeyType: "HASH"
+          - AttributeName: "created_at"
+            KeyType: "RANGE"
+          Projection:
+            ProjectionType: ALL
+
+    EvaluationReportsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: "${self:custom.evaluation_report_table_name}"
+        AttributeDefinitions:
+          -
+            AttributeName: "version"
+            AttributeType: "S"
+          -
+            AttributeName: "created_at"
+            AttributeType: "N"
+        KeySchema:
+          -
+            AttributeName: "version"
+            KeyType: "HASH"
+          -
+            AttributeName: "created_at"
+            KeyType: "RANGE"
+        ProvisionedThroughput:
+          ReadCapacityUnits: "1"
+          WriteCapacityUnits: "1"
+
+    PreferencesTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: "${self:custom.preference_table_name}"
+        AttributeDefinitions:
+          -
+            AttributeName: "preference_type"
+            AttributeType: "S"
+          -
+            AttributeName: "preference_key"
+            AttributeType: "S"
+        KeySchema:
+          -
+            AttributeName: "preference_type"
+            KeyType: "HASH"
+          -
+            AttributeName: "preference_key"
+            KeyType: "RANGE"
+        ProvisionedThroughput:
+          ReadCapacityUnits: "1"
+          WriteCapacityUnits: "1"
+
+    CollectionQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: "${self:custom.collection_queue_name}"
+        VisibilityTimeout: 120
+        MessageRetentionPeriod: 4500
+
+    ClassificationQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: "${self:custom.classification_queue_name}"
+        VisibilityTimeout: 120
+        MessageRetentionPeriod: 4500
+
+    NotificationTopic:
+      Type: AWS::SNS::Topic
+      Properties:
+        DisplayName: "Rumor Report"
+        TopicName: "${self:custom.notification_topic_name}"
+
+    AlarmTopic:
+      Type: AWS::SNS::Topic
+      Properties:
+        DisplayName: "Rumor Alarm ${self:provider.stage}"
+        TopicName: "rumor-${self:provider.stage}-alarm"
+
+    AlarmEmailSubscription:
+      Type: AWS::SNS::Subscription
+      Properties:
+        Endpoint: "${env:ADMIN_EMAIL}"
+        Protocol: email
+        TopicArn:
+          Ref: AlarmTopic
+
+    DiscoveryFunctionAlarm:
+      Type: AWS::CloudWatch::Alarm
+      Properties:
+        AlarmName: "discovery-function-health-${self:provider.stage}"
+        AlarmDescription: "Health alarm of function rumor-${self:provider.stage}-discovery"
+        AlarmActions:
+          - Ref: AlarmTopic
+        Namespace: AWS/Lambda
+        MetricName: Errors
+        Dimensions:
+          - Name: FunctionName
+            Value: "rumor-${self:provider.stage}-discovery"
+        Period: 86400
+        Statistic: Sum
+        Threshold: 3
+        ComparisonOperator: GreaterThanOrEqualToThreshold
+        EvaluationPeriods: 1
+        TreatMissingData: notBreaching
+
+    InspectionFunctionAlarm:
+      Type: AWS::CloudWatch::Alarm
+      Properties:
+        AlarmName: "inspection-function-health-${self:provider.stage}"
+        AlarmDescription: "Health alarm of function rumor-${self:provider.stage}-inspection"
+        AlarmActions:
+          - Ref: AlarmTopic
+        Namespace: AWS/Lambda
+        MetricName: Errors
+        Dimensions:
+          - Name: FunctionName
+            Value: "rumor-${self:provider.stage}-inspection"
+        Period: 86400
+        Statistic: Sum
+        Threshold: 39
+        ComparisonOperator: GreaterThanOrEqualToThreshold
+        EvaluationPeriods: 1
+        TreatMissingData: notBreaching
+
+    ClassificationFunctionAlarm:
+      Type: AWS::CloudWatch::Alarm
+      Properties:
+        AlarmName: "classification-function-health-${self:provider.stage}"
+        AlarmDescription: "Health alarm of function rumor-${self:provider.stage}-classification"
+        AlarmActions:
+          - Ref: AlarmTopic
+        Namespace: AWS/Lambda
+        MetricName: Errors
+        Dimensions:
+          - Name: FunctionName
+            Value: "rumor-${self:provider.stage}-classification"
+        Period: 86400
+        Statistic: Sum
+        Threshold: 39
+        ComparisonOperator: GreaterThanOrEqualToThreshold
+        EvaluationPeriods: 1
+        TreatMissingData: notBreaching
+
+    EvaluationFunctionAlarm:
+      Type: AWS::CloudWatch::Alarm
+      Properties:
+        AlarmName: "evaluation-function-health-${self:provider.stage}"
+        AlarmDescription: "Health alarm of function rumor-${self:provider.stage}-evaluation"
+        AlarmActions:
+          - Ref: AlarmTopic
+        Namespace: AWS/Lambda
+        MetricName: Errors
+        Dimensions:
+          - Name: FunctionName
+            Value: "rumor-${self:provider.stage}-evaluation"
+        Period: 86400
+        Statistic: Sum
+        Threshold: 1
+        ComparisonOperator: GreaterThanOrEqualToThreshold
+        EvaluationPeriods: 1
+        TreatMissingData: notBreaching
+
+    ReportFunctionAlarm:
+      Type: AWS::CloudWatch::Alarm
+      Properties:
+        AlarmName: "report-function-health-${self:provider.stage}"
+        AlarmDescription: "Health alarm of function rumor-${self:provider.stage}-report"
+        AlarmActions:
+          - Ref: AlarmTopic
+        Namespace: AWS/Lambda
+        MetricName: Errors
+        Dimensions:
+          - Name: FunctionName
+            Value: "rumor-${self:provider.stage}-report"
+        Period: 86400
+        Statistic: Sum
+        Threshold: 1
+        ComparisonOperator: GreaterThanOrEqualToThreshold
+        EvaluationPeriods: 1
+        TreatMissingData: notBreaching
+
+    Dashboard:
+      Type: AWS::CloudWatch::Dashboard
+      Properties:
+        DashboardName: "rumor-${self:provider.stage}-dashboard"
+        DashboardBody:
+          '{
+              "widgets": [
+                  {
+                      "type": "metric",
+                      "x": 12,
+                      "y": 6,
+                      "width": 12,
+                      "height": 6,
+                      "properties": {
+                          "metrics": [
+                              [ "AWS/Lambda", "Invocations", "FunctionName", "rumor-${self:provider.stage}-classification", { "period": 3600, "stat": "Sum" } ],
+                              [ "...", "rumor-${self:provider.stage}-discovery", { "period": 3600, "stat": "Sum" } ],
+                              [ "...", "rumor-${self:provider.stage}-inspection", { "period": 3600, "stat": "Sum" } ],
+                              [ "...", "rumor-${self:provider.stage}-evaluation", { "period": 3600, "stat": "Sum" } ],
+                              [ "...", "rumor-${self:provider.stage}-report", { "period": 3600, "stat": "Sum" } ]
+                          ],
+                          "view": "timeSeries",
+                          "stacked": false,
+                          "title": "Errors Sum",
+                          "region": "${self:provider.region}",
+                          "period": 300,
+                          "yAxis": {
+                              "left": {
+                                  "min": 0
+                              }
+                          }
+                      }
+                  },
+                  {
+                      "type": "metric",
+                      "x": 0,
+                      "y": 0,
+                      "width": 24,
+                      "height": 6,
+                      "properties": {
+                          "metrics": [
+                              [ { "expression": "100 - 100 * errors / invocations", "label": "Availability (%)", "id": "availability", "period": 3600 } ],
+                              [ "AWS/Lambda", "Invocations", { "id": "invocations", "period": 3600, "stat": "Sum", "visible": false } ],
+                              [ ".", "Errors", { "id": "errors", "period": 3600, "stat": "Sum", "visible": false } ]
+                          ],
+                          "view": "timeSeries",
+                          "stacked": false,
+                          "region": "${self:provider.region}",
+                          "title": "Overall System Availability (%)",
+                          "period": 300,
+                          "yAxis": {
+                              "left": {
+                                  "min": 0,
+                                  "max": 100
+                              }
+                          },
+                          "annotations": {
+                              "horizontal": [
+                                  {
+                                      "color": "#2ca02c",
+                                      "label": "SLO",
+                                      "value": 95,
+                                      "fill": "above"
+                                  }
+                              ]
+                          }
+                      }
+                  },
+                  {
+                      "type": "metric",
+                      "x": 0,
+                      "y": 6,
+                      "width": 12,
+                      "height": 6,
+                      "properties": {
+                          "metrics": [
+                              [ "AWS/Lambda", "Invocations", "FunctionName", "rumor-${self:provider.stage}-classification", { "stat": "Sum", "period": 3600 } ],
+                              [ "...", "rumor-${self:provider.stage}-discovery", { "stat": "Sum", "period": 3600 } ],
+                              [ "...", "rumor-${self:provider.stage}-evaluation", { "stat": "Sum", "period": 3600 } ],
+                              [ "...", "rumor-${self:provider.stage}-inspection", { "stat": "Sum", "period": 3600 } ],
+                              [ "...", "rumor-${self:provider.stage}-report", { "stat": "Sum", "period": 3600 } ]
+                          ],
+                          "view": "timeSeries",
+                          "stacked": false,
+                          "title": "Invocations Sum",
+                          "region": "${self:provider.region}",
+                          "period": 300,
+                          "yAxis": {
+                              "left": {
+                                  "min": 0
+                              }
+                          }
+                      }
+                  }
+              ]
+          }'

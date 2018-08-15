@@ -1,0 +1,123 @@
+{
+	"version": "1.0.0",
+	"title": "Discovery function: Reduce timeout",
+	"description": "N/A",
+	"tags": [],
+	"configuration": {
+		"aws_region": "eu-central-1"
+	},
+	"steady-state-hypothesis": {
+		"title": "Steady state check for discovery function",
+		"probes": [
+			{
+				"type": "probe",
+				"name": "Check that function alarm is ok",
+				"provider": {
+					"type": "python",
+					"module": "chaosaws.cloudwatch.probes",
+					"func": "get_alarm_state_value",
+					"arguments": {
+						"alarm_name": "discovery-function-health-production"
+					}
+				},
+				"tolerance": "OK"
+			},
+			{
+				"type": "probe",
+				"name": "Check SQS collection queue length",
+				"provider": {
+					"type": "python",
+					"module": "chaosaws.cloudwatch.probes",
+					"func": "get_metric_statistics",
+					"arguments": {
+						"namespace": "AWS/SQS",
+						"metric_name": "ApproximateNumberOfMessagesVisible",
+						"dimension_name": "QueueName",
+						"dimension_value": "rumor-production-collection-queue",
+						"duration": 300,
+						"offset": 0,
+						"statistic": "Sum",
+						"extended_statistic": null,
+						"unit": "Count"
+					}
+				},
+				"tolerance": [0.0, 50.0]
+			},
+			{
+				"type": "probe",
+				"name": "Check current timeout",
+				"provider": {
+					"type": "python",
+					"module": "chaosaws.awslambda.probes",
+					"func": "get_function_timeout",
+					"arguments": {
+						"function_name": "rumor-production-discovery",
+						"qualifier": null
+					}
+				},
+				"tolerance": 6
+			}
+		]
+	},
+	"method": [
+		{
+			"type": "action",
+			"name": "Reduce function timeout",
+			"provider": {
+				"type": "python",
+				"module": "chaosaws.awslambda.actions",
+				"func": "put_function_timeout",
+				"arguments": {
+					"function_name": "rumor-production-discovery",
+					"timeout": 4
+				}
+			}
+		},
+		{
+			"type": "action",
+			"name": "Invoke discovery function with reduced timeout limit",
+			"provider": {
+				"type": "python",
+				"module": "chaosaws.awslambda.actions",
+				"func": "invoke_function",
+				"arguments": {
+					"function_name": "rumor-production-discovery",
+					"invocation_type": "RequestResponse",
+					"client_context": null,
+					"qualifier": null
+				}
+			},
+			"pauses": {
+				"after": 120
+			}
+		},
+		{
+			"type": "action",
+			"name": "Restore function timeout",
+			"provider": {
+				"type": "python",
+				"module": "chaosaws.awslambda.actions",
+				"func": "put_function_timeout",
+				"arguments": {
+					"function_name": "rumor-production-discovery",
+					"timeout": 6
+				}
+			}
+		}
+	],
+	"rollbacks": [
+		{
+			"type": "action",
+			"name": "Restore function timeout",
+			"provider": {
+				"type": "python",
+				"module": "chaosaws.awslambda.actions",
+				"func": "put_function_timeout",
+				"arguments": {
+					"function_name": "rumor-production-discovery",
+					"timeout": 6
+				}
+			}
+		}
+	]
+}

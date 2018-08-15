@@ -1,0 +1,11 @@
+boto3
+click
+flake8
+flake8
+isort
+isort
+jinja2
+logzero
+pytest
+pytest-cov
+requests

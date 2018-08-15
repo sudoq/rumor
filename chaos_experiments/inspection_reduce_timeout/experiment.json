@@ -1,0 +1,144 @@
+{
+	"version": "1.0.0",
+	"title": "Inspection function: Reduce timeout",
+	"description": "N/A",
+	"tags": [],
+	"configuration": {
+		"aws_region": "eu-central-1"
+	},
+	"steady-state-hypothesis": {
+		"title": "Steady state check for inspection function",
+		"probes": [
+			{
+				"type": "probe",
+				"name": "Check that function alarm is ok",
+				"provider": {
+					"type": "python",
+					"module": "chaosaws.cloudwatch.probes",
+					"func": "get_alarm_state_value",
+					"arguments": {
+						"alarm_name": "inspection-function-health-production"
+					}
+				},
+				"tolerance": "OK"
+			},
+			{
+				"type": "probe",
+				"name": "Check SQS collection queue length",
+				"provider": {
+					"type": "python",
+					"module": "chaosaws.cloudwatch.probes",
+					"func": "get_metric_statistics",
+					"arguments": {
+						"namespace": "AWS/SQS",
+						"metric_name": "ApproximateNumberOfMessagesVisible",
+						"dimension_name": "QueueName",
+						"dimension_value": "rumor-production-collection-queue",
+						"duration": 300,
+						"offset": 0,
+						"statistic": "Sum",
+						"extended_statistic": null,
+						"unit": "Count"
+					}
+				},
+				"tolerance": [0.0, 50.0]
+			},
+			{
+				"type": "probe",
+				"name": "Check SQS classification queue length",
+				"provider": {
+					"type": "python",
+					"module": "chaosaws.cloudwatch.probes",
+					"func": "get_metric_statistics",
+					"arguments": {
+						"namespace": "AWS/SQS",
+						"metric_name": "ApproximateNumberOfMessagesVisible",
+						"dimension_name": "QueueName",
+						"dimension_value": "rumor-production-classification-queue",
+						"duration": 300,
+						"offset": 0,
+						"statistic": "Sum",
+						"extended_statistic": null,
+						"unit": "Count"
+					}
+				},
+				"tolerance": [0.0, 50.0]
+			},
+			{
+				"type": "probe",
+				"name": "Check current timeout",
+				"provider": {
+					"type": "python",
+					"module": "chaosaws.awslambda.probes",
+					"func": "get_function_timeout",
+					"arguments": {
+						"function_name": "rumor-production-inspection",
+						"qualifier": null
+					}
+				},
+				"tolerance": 15
+			}
+		]
+	},
+	"method": [
+		{
+			"type": "action",
+			"name": "Reduce function timeout",
+			"provider": {
+				"type": "python",
+				"module": "chaosaws.awslambda.actions",
+				"func": "put_function_timeout",
+				"arguments": {
+					"function_name": "rumor-production-inspection",
+					"timeout": 4
+				}
+			}
+		},
+		{
+			"type": "action",
+			"name": "Invoke inspection function with reduced timeout limit",
+			"provider": {
+				"type": "python",
+				"module": "chaosaws.awslambda.actions",
+				"func": "invoke_function",
+				"arguments": {
+					"function_name": "rumor-production-inspection",
+					"invocation_type": "RequestResponse",
+					"client_context": null,
+					"qualifier": null
+				}
+			},
+			"pauses": {
+				"after": 120
+			}
+		},
+		{
+			"type": "action",
+			"name": "Restore function timeout",
+			"provider": {
+				"type": "python",
+				"module": "chaosaws.awslambda.actions",
+				"func": "put_function_timeout",
+				"arguments": {
+					"function_name": "rumor-production-inspection",
+					"timeout": 15
+				}
+			}
+		}
+	],
+	"rollbacks": [
+		{
+			"type": "action",
+			"name": "Restore function timeout",
+			"provider": {
+				"type": "python",
+				"module": "chaosaws.awslambda.actions",
+				"func": "put_function_timeout",
+				"arguments": {
+					"function_name": "rumor-production-inspection",
+					"timeout": 15
+				}
+			}
+		}
+	]
+}

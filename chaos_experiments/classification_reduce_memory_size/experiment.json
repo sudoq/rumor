@@ -1,0 +1,165 @@
+{
+	"version": "1.0.0",
+	"title": "Classification function: Reduce memory size",
+	"description": "N/A",
+	"tags": [],
+	"configuration": {
+		"aws_region": "eu-central-1"
+	},
+	"steady-state-hypothesis": {
+		"title": "Steady state check for classification function",
+		"probes": [
+			{
+				"type": "probe",
+				"name": "Check that function alarm is ok",
+				"provider": {
+					"type": "python",
+					"module": "chaosaws.cloudwatch.probes",
+					"func": "get_alarm_state_value",
+					"arguments": {
+						"alarm_name": "classification-function-health-production"
+					}
+				},
+				"tolerance": "OK"
+			},
+			{
+				"type": "probe",
+				"name": "Check SQS classification queue length",
+				"provider": {
+					"type": "python",
+					"module": "chaosaws.cloudwatch.probes",
+					"func": "get_metric_statistics",
+					"arguments": {
+						"namespace": "AWS/SQS",
+						"metric_name": "ApproximateNumberOfMessagesVisible",
+						"dimension_name": "QueueName",
+						"dimension_value": "rumor-production-classification-queue",
+						"duration": 300,
+						"offset": 0,
+						"statistic": "Sum",
+						"extended_statistic": null,
+						"unit": "Count"
+					}
+				},
+				"tolerance": [0.0, 50.0]
+			},
+			{
+				"type": "probe",
+				"name": "Check consumed read capacity units for DynamoDB table news-items",
+				"provider": {
+					"type": "python",
+					"module": "chaosaws.cloudwatch.probes",
+					"func": "get_metric_statistics",
+					"arguments": {
+						"namespace": "AWS/DynamoDB",
+						"metric_name": "ConsumedReadCapacityUnits",
+						"dimension_name": "TableName",
+						"dimension_value": "rumor-production-news-items",
+						"duration": 300,
+						"offset": 0,
+						"statistic": "Sum",
+						"extended_statistic": null,
+						"unit": "Count"
+					}
+				},
+				"tolerance": [0.0, 1.0]
+			},
+			{
+				"type": "probe",
+				"name": "Check consumed write capacity units for DynamoDB table news-items",
+				"provider": {
+					"type": "python",
+					"module": "chaosaws.cloudwatch.probes",
+					"func": "get_metric_statistics",
+					"arguments": {
+						"namespace": "AWS/DynamoDB",
+						"metric_name": "ConsumedWriteCapacityUnits",
+						"dimension_name": "TableName",
+						"dimension_value": "rumor-production-news-items",
+						"duration": 300,
+						"offset": 0,
+						"statistic": "Sum",
+						"extended_statistic": null,
+						"unit": "Count"
+					}
+				},
+				"tolerance": [0.0, 1.0]
+			},
+			{
+				"type": "probe",
+				"name": "Check current memory size",
+				"provider": {
+					"type": "python",
+					"module": "chaosaws.awslambda.probes",
+					"func": "get_function_memory_size",
+					"arguments": {
+						"function_name": "rumor-production-classification",
+						"qualifier": null
+					}
+				},
+				"tolerance": 256
+			}
+		]
+	},
+	"method": [
+		{
+			"type": "action",
+			"name": "Reduce function memory size",
+			"provider": {
+				"type": "python",
+				"module": "chaosaws.awslambda.actions",
+				"func": "put_function_memory_size",
+				"arguments": {
+					"function_name": "rumor-production-classification",
+					"memory_size": 128
+				}
+			}
+		},
+		{
+			"type": "action",
+			"name": "Invoke classification function with reduced memory size limit",
+			"provider": {
+				"type": "python",
+				"module": "chaosaws.awslambda.actions",
+				"func": "invoke_function",
+				"arguments": {
+					"function_name": "rumor-production-classification",
+					"invocation_type": "RequestResponse",
+					"client_context": null,
+					"qualifier": null
+				}
+			},
+			"pauses": {
+				"after": 120
+			}
+		},
+		{
+			"type": "action",
+			"name": "Restore function memory size",
+			"provider": {
+				"type": "python",
+				"module": "chaosaws.awslambda.actions",
+				"func": "put_function_memory_size",
+				"arguments": {
+					"function_name": "rumor-production-classification",
+					"memory_size": 256
+				}
+			}
+		}
+	],
+	"rollbacks": [
+		{
+			"type": "action",
+			"name": "Restore function memory size",
+			"provider": {
+				"type": "python",
+				"module": "chaosaws.awslambda.actions",
+				"func": "put_function_memory_size",
+				"arguments": {
+					"function_name": "rumor-production-classification",
+					"memory_size": 256
+				}
+			}
+		}
+	]
+}

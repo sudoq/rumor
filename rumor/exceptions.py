@@ -1,0 +1,2 @@
+class UpstreamError(Exception):
+    pass
