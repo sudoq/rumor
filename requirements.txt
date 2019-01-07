@@ -7,5 +7,4 @@ isort
 jinja2
 logzero
 pytest
-pytest-cov
 requests
