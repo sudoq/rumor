@@ -1,10 +1,13 @@
 import json
+import re
 from datetime import datetime, timedelta
 from typing import Any, Dict
 
 from logzero import logger
 
 from rumor.upstreams.aws import delete_messages, get_messages, store_item
+
+KEYWORD_PATTERN = re.compile('[A-Z]+[a-z]*')
 
 
 def classify(classification_queue_name: str, batch_size: int,
@@ -33,12 +36,12 @@ def classify(classification_queue_name: str, batch_size: int,
 
 
 def classify_news_item(news_item: Dict[str, Any]) -> Dict[str, Any]:
-    keywords = []
-    for word in news_item['title'].split():
-        if word.istitle():
-            keywords.append(word.lower())
-    news_item['keywords'] = keywords
+    news_item['keywords'] = extract_keywords(news_item['title'])
     return news_item
+
+
+def extract_keywords(sentence):
+    return list(map(str.lower, KEYWORD_PATTERN.findall(sentence)))
 
 
 def normalize(input_data: Dict[str, Any], ttl_hours: int) -> Dict[str, Any]:

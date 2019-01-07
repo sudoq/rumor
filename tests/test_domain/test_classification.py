@@ -5,6 +5,7 @@ from unittest.mock import patch
 import pytest
 
 from rumor.domain import classify
+from rumor.domain.classification import extract_keywords
 
 
 @patch('rumor.domain.classification.store_item')
@@ -75,3 +76,18 @@ class TestClassification:
                                          batch_size=batch_size)
         mock_delete.assert_not_called()
         mock_store.assert_not_called()
+
+
+@pytest.mark.parametrize('sentence, keywords', [
+    ('this is a Keyword', ['keyword']),
+    ('(this is a Keyword)', ['keyword']),
+    ('this is a (Keyword)', ['keyword']),
+    ('this is a #Keyword', ['keyword']),
+    ('this is a KEYWORD', ['keyword']),
+    ('this is a Keyword.', ['keyword']),
+    ('this is a Keyword!?', ['keyword']),
+    ('this sentence contains Two! Keywords?', ['two', 'keywords']),
+])
+def test_extract_keywords(sentence, keywords):
+    results = extract_keywords(sentence)
+    assert results == keywords
