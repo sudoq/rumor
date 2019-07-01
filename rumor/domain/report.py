@@ -30,7 +30,9 @@ def format_report(report: Dict[str, Any]) -> str:
     head_template = 'Created {created_at_pretty}\n\n'
     body_template = (
         '[{score} + {score_bonus}] {title}\n'
-        '{url}\n\n'
+        '{url}\n'
+        '{feedback_url}\n'
+        '\n'
     )
     head = head_template.format(**attributes)
     body = ''
