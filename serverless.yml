@@ -36,6 +36,7 @@ provider:
     RUMOR_CLASSIFICATION_BATCH_SIZE: "10"
     RUMOR_REPORT_PERIOD_HOURS: "24"
     RUMOR_NOTIFICATION_TOPIC_NAME: "${self:custom.notification_topic_name}"
+    RUMOR_BITLY_ACCESS_TOKEN: "${ssm:rumorBitlyAccessToken}"
 
   iamRoleStatements:
     - Effect: "Allow"
@@ -238,7 +239,7 @@ resources:
     AlarmEmailSubscription:
       Type: AWS::SNS::Subscription
       Properties:
-        Endpoint: "${env:ADMIN_EMAIL}"
+        Endpoint: "${ssm:rumorAdminEmail}"
         Protocol: email
         TopicArn:
           Ref: AlarmTopic
