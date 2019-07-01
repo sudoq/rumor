@@ -77,6 +77,8 @@ def evaluation_handler(event: Dict[str, Any], context: Dict[str, Any]) -> None:
     preference_table_name = event.get(
         'preference_table_name', os.environ.get(
             'RUMOR_PREFERENCE_TABLE_NAME', 'rumor-dev-preferences'))
+    bitly_access_token = event.get(
+        'bitly_access_token', os.environ.get('RUMOR_BITLY_ACCESS_TOKEN'))
 
     evaluate(news_item_max_age_hours=news_item_max_age_hours,
              evaluation_period_hours=evaluation_period_hours,
@@ -84,7 +86,8 @@ def evaluation_handler(event: Dict[str, Any], context: Dict[str, Any]) -> None:
              qualification_limit=qualification_limit,
              news_item_table_name=news_item_table_name,
              evaluation_report_table_name=evaluation_report_table_name,
-             preference_table_name=preference_table_name)
+             preference_table_name=preference_table_name,
+             bitly_access_token=bitly_access_token)
 
 
 def report_handler(event: Dict[str, Any], context: Dict[str, Any]) -> None:

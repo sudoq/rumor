@@ -56,7 +56,8 @@ def test_evaluation_handler(mock_evaluate, mock_os):
         news_item_max_age_hours=48,
         news_item_table_name='rumor-dev-news-items',
         qualification_limit=10,
-        qualification_threshold=1.5
+        qualification_threshold=1.5,
+        bitly_access_token=None
     )
 
 
