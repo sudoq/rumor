@@ -42,7 +42,6 @@ def classify_news_item(news_item: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def extract_keywords(sentence):
-    # TODO Note add warning if trying to add excluded word to preferences.
     excluded_words = set(get_excluded_words(EXCLUDED_FILES_PATH))
     words_in_sentence = set(map(str.lower, KEYWORD_PATTERN.findall(sentence)))
     return list(words_in_sentence - excluded_words)
