@@ -108,6 +108,15 @@ def get_preferences(preference_table_name: str):
     return items
 
 
+def store_preference(keyword: str, weight: float, preference_table_name: str):
+    preference_item = {
+        'preference_type': 'KEYWORD',
+        'preference_key': keyword,
+        'preference_weight': Decimal(weight)
+    }
+    return store_item(preference_item, preference_table_name)
+
+
 def send_notification(msg: str, topic_arn_hint: str, subject: str) -> None:
     client = boto3.client('sns')
     topics = client.list_topics()['Topics']

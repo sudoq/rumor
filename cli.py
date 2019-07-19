@@ -4,7 +4,6 @@ import os
 import random
 import subprocess
 from datetime import datetime, timedelta
-from decimal import Decimal
 from typing import Any, Dict, List
 
 import boto3
@@ -12,13 +11,7 @@ import boto3.dynamodb.types
 import click
 from jinja2 import Template
 
-AVAILABLE_SERVICES = [
-    'classification',
-    'discovery',
-    'evaluation',
-    'inspection',
-    'report'
-]
+from rumor.upstreams.aws import store_preference
 
 
 @click.group()
@@ -111,14 +104,9 @@ def create_subscription(email: str, topic_hint: str,
 @click.option('--table', default='rumor-production-preferences')
 @click.option('--weight', default=1.25, type=float)
 @click.argument('keyword')
-def create_keyword(keyword: str, weight: int, table: str,
+def create_keyword(keyword: str, weight: float, table: str,
                    dry_run: bool, verbose: bool, quiet: bool):
-    preference_item = {
-        'preference_type': 'KEYWORD',
-        'preference_key': keyword,
-        'preference_weight': Decimal(weight)
-    }
-    _store_preference(preference_item, table)
+    store_preference(keyword, weight, table)
     click.echo(f'Keyword "{keyword}" with weight {weight} saved to table "{table}"')
 
 
