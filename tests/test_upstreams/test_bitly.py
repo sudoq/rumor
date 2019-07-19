@@ -12,7 +12,7 @@ from rumor.upstreams.bitly import (create_bitlink, get_bitlink_clicks,
 def test_create_bitlink_ok(mock_requests, bitly_access_token, bitly_bitlink,
                            bitly_long_url, bitly_api_url):
     mock_response = MagicMock()
-    mock_response.status_code = 200
+    mock_response.status_code = 201
     mock_response.json.return_value = bitly_bitlink
     mock_requests.request.return_value = mock_response
 
@@ -22,6 +22,23 @@ def test_create_bitlink_ok(mock_requests, bitly_access_token, bitly_bitlink,
     mock_requests.request.assert_called_once_with(
             'POST', f'{bitly_api_url}/shorten',
             json={"long_url": bitly_long_url},
+            headers={'Authorization': f'Bearer {bitly_access_token}'})
+
+
+@patch('rumor.upstreams.bitly.requests')
+def test_create_bitlink_with_tags_ok(mock_requests, bitly_access_token, bitly_bitlink,
+                                     bitly_long_url, bitly_api_url, bitly_tags):
+    mock_response = MagicMock()
+    mock_response.status_code = 201
+    mock_response.json.return_value = bitly_bitlink
+    mock_requests.request.return_value = mock_response
+
+    bitlink = create_bitlink(bitly_long_url, bitly_access_token, bitly_tags)
+
+    assert bitlink == bitly_bitlink
+    mock_requests.request.assert_called_once_with(
+            'POST', f'{bitly_api_url}/shorten',
+            json={"long_url": bitly_long_url, "tags": bitly_tags},
             headers={'Authorization': f'Bearer {bitly_access_token}'})
 
 
@@ -97,16 +114,20 @@ def test_get_bitlink_clicks(mock_requests, bitly_access_token, bitly_bitlink,
 
     mock_response = MagicMock()
     mock_response.status_code = 200
-    mock_response.json.return_value = {
-        "total_clicks": 17,
+    click_response = {
+        'unit_reference': '2019-07-18T11:10:22+0000',
+        'link_clicks': [{'date': '2019-07-02T00:00:00+0000', 'clicks': 1}],
+        'units': -1,
+        'unit': 'day'
     }
+    mock_response.json.return_value = click_response
 
     mock_requests.request.return_value = mock_response
 
-    clicks = get_bitlink_clicks(bitly_bitlink_id, bitly_access_token)
+    result = get_bitlink_clicks(bitly_bitlink_id, bitly_access_token)
 
-    assert clicks == 17
+    assert result == [{'date': '2019-07-02T00:00:00+0000', 'clicks': 1}]
     mock_requests.request.assert_called_once_with(
-            'GET', f'{bitly_api_url}/bitlinks/{bitly_bitlink_id}/clicks/summary',
+            'GET', f'{bitly_api_url}/bitlinks/{bitly_bitlink_id}/clicks',
             headers={'Authorization': f'Bearer {bitly_access_token}'},
             json=None)

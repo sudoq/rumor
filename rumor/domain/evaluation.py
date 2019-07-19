@@ -120,5 +120,5 @@ def add_feedback_links(news_items: List[Dict[str, Any]],
 
 
 def create_feedback_link(news_item: Dict[str, Any], bitly_access_token: str) -> str:
-    bitlink = create_bitlink(news_item['url'], bitly_access_token)
+    bitlink = create_bitlink(news_item['url'], bitly_access_token, tags=news_item['keywords'])
     return bitlink['link']

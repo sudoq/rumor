@@ -27,6 +27,11 @@ def bitly_bitlink_id():
 
 
 @pytest.fixture
+def bitly_tags():
+    return ["these", "are", "some", "tags"]
+
+
+@pytest.fixture
 def bitly_bitlink_link(bitly_bitlink_id):
     return f"http://{bitly_bitlink_id}"
 
