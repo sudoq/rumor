@@ -346,6 +346,25 @@ resources:
         EvaluationPeriods: 1
         TreatMissingData: notBreaching
 
+    FeedbackFunctionAlarm:
+      Type: AWS::CloudWatch::Alarm
+      Properties:
+        AlarmName: "feedback-function-health-${self:provider.stage}"
+        AlarmDescription: "Health alarm of function rumor-${self:provider.stage}-feedback"
+        AlarmActions:
+          - Ref: AlarmTopic
+        Namespace: AWS/Lambda
+        MetricName: Errors
+        Dimensions:
+          - Name: FunctionName
+            Value: "rumor-${self:provider.stage}-feedback"
+        Period: 86400
+        Statistic: Sum
+        Threshold: 1
+        ComparisonOperator: GreaterThanOrEqualToThreshold
+        EvaluationPeriods: 1
+        TreatMissingData: notBreaching
+
     Dashboard:
       Type: AWS::CloudWatch::Dashboard
       Properties:
