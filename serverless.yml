@@ -37,6 +37,8 @@ provider:
     RUMOR_REPORT_PERIOD_HOURS: "24"
     RUMOR_NOTIFICATION_TOPIC_NAME: "${self:custom.notification_topic_name}"
     RUMOR_BITLY_ACCESS_TOKEN: "${ssm:rumorBitlyAccessToken}"
+    RUMOR_FEEDBACK_PERIOD_HOURS: "24"
+    RUMOR_FEEDBACK_MAX_AGE_HOURS: "720"
 
   iamRoleStatements:
     - Effect: "Allow"
@@ -124,6 +126,11 @@ functions:
       - schedule: "rate(72 hours)"
   report:
     handler: rumor.interfaces.handlers.report_handler
+    events:
+      - schedule: "cron(0 12 * * ? *)"
+  feedback:
+    handler: rumor.interfaces.handlers.feedback_handler
+    timeout: 30
     events:
       - schedule: "cron(0 12 * * ? *)"
 
