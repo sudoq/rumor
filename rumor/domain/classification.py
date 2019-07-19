@@ -7,13 +7,13 @@ from logzero import logger
 
 from rumor.upstreams.aws import delete_messages, get_messages, store_item
 
-KEYWORD_PATTERN = re.compile('[A-Z]+[a-z]*')
+KEYWORD_PATTERN = re.compile("[a-zA-Z]{2,}")
+EXCLUDED_FILES_PATH = 'rumor/files/excluded_words.txt'
 
 
 def classify(classification_queue_name: str, batch_size: int,
              news_item_max_age_hours: int,
              news_item_table_name: str) -> None:
-
     if batch_size <= 0 or batch_size > 10:
         logger.warning(f'Invalid batch size: {batch_size}')
         return
@@ -37,11 +37,22 @@ def classify(classification_queue_name: str, batch_size: int,
 
 def classify_news_item(news_item: Dict[str, Any]) -> Dict[str, Any]:
     news_item['keywords'] = extract_keywords(news_item['title'])
+    logger.info(news_item['keywords'])
     return news_item
 
 
 def extract_keywords(sentence):
-    return list(map(str.lower, KEYWORD_PATTERN.findall(sentence)))
+    # TODO Note add warning if trying to add excluded word to preferences.
+    excluded_words = set(get_excluded_words(EXCLUDED_FILES_PATH))
+    words_in_sentence = set(map(str.lower, KEYWORD_PATTERN.findall(sentence)))
+    return list(words_in_sentence - excluded_words)
+
+
+def get_excluded_words(path):
+    words = []
+    with open(path) as f:
+        words = [line.strip() for line in f.readlines()]
+    return words
 
 
 def normalize(input_data: Dict[str, Any], ttl_hours: int) -> Dict[str, Any]:
