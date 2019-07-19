@@ -42,12 +42,22 @@ $ pip install -r requirements.txt
 $ python cli.py --help
 ```
 
+### Configuration
+In order to get the system up and running, you need to store the following information in AWS SSM Parameter Store:
+- An target administrator email (Used for receiving CloudWatch alerts)
+- Bitly access token (Used for generating bitly links)
+
+Before deploying the application you need to configure these parameters with the following commands:
+```
+aws ssm put-parameter --name rumorBitlyAccessToken --type String --value myBitlyAccessToken
+aws ssm put-parameter --name rumorAdminEmail --type String --value foobar@example.com
+```
+
 ## Usage
 ### Serverless framework
-Run the following command to deploy the production environment with the admin email `foobar@example.com`.
-The admin email is used for receiving CloudWatch alerts.
+Run the following command to deploy the production environment.
 ```
-ADMIN_EMAIL=foobar@example.com serverless deploy
+serverless deploy
 ```
 
 ### Command-Line Interface

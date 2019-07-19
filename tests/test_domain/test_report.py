@@ -14,7 +14,8 @@ class TestReport:
                 {
                     'url': f'some-url-{i}',
                     'score': i,
-                    'title': f'title-{i}'
+                    'title': f'title-{i}',
+                    'feedback_url': f'some-feedback-url-{i}'
                 } for i in range(3)
             ]
         }

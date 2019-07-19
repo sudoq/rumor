@@ -30,7 +30,9 @@ def format_report(report: Dict[str, Any]) -> str:
     head_template = 'Created {created_at_pretty}\n\n'
     body_template = (
         '[{score} + {score_bonus}] {title}\n'
-        '{url}\n\n'
+        '{url}\n'
+        '{feedback_url}\n'
+        '\n'
     )
     head = head_template.format(**attributes)
     body = ''
@@ -53,6 +55,7 @@ def get_attributes(report: Dict[str, Any]) -> Dict[str, Any]:
         score_bonus = modified_score - ni['score']
         ni['score_bonus'] = score_bonus
         ni['modified_score'] = modified_score
+        ni['feedback_url'] = ni.get('feedback_url', '...')
     return {
         'created_at': created_at,
         'created_at_pretty': created_at_pretty,
