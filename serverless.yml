@@ -122,6 +122,7 @@ functions:
       - schedule: "cron(0-15 * * * ? *)"
   evaluation:
     handler: rumor.interfaces.handlers.evaluation_handler
+    timeout: 30
     events:
       - schedule: "rate(72 hours)"
   report:
