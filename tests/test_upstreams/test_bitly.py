@@ -10,50 +10,40 @@ from rumor.upstreams.bitly import (create_bitlink, get_bitlink_clicks,
 
 @patch('rumor.upstreams.bitly.requests')
 def test_create_bitlink_ok(mock_requests, bitly_access_token, bitly_bitlink,
-                           bitly_long_url, bitly_api_url):
+                           bitly_long_url, bitly_api_url, bitly_bitlink_title):
     mock_response = MagicMock()
     mock_response.status_code = 201
     mock_response.json.return_value = bitly_bitlink
     mock_requests.request.return_value = mock_response
 
-    bitlink = create_bitlink(bitly_long_url, bitly_access_token)
+    bitlink = create_bitlink(bitly_long_url, bitly_bitlink_title, bitly_access_token)
 
     assert bitlink == bitly_bitlink
     mock_requests.request.assert_called_once_with(
             'POST', f'{bitly_api_url}/shorten',
-            json={"long_url": bitly_long_url},
+            json={
+                "long_url": bitly_long_url,
+                "title": bitly_bitlink_title
+            },
             headers={'Authorization': f'Bearer {bitly_access_token}'})
 
 
 @patch('rumor.upstreams.bitly.requests')
-def test_create_bitlink_with_tags_ok(mock_requests, bitly_access_token, bitly_bitlink,
-                                     bitly_long_url, bitly_api_url, bitly_tags):
-    mock_response = MagicMock()
-    mock_response.status_code = 201
-    mock_response.json.return_value = bitly_bitlink
-    mock_requests.request.return_value = mock_response
-
-    bitlink = create_bitlink(bitly_long_url, bitly_access_token, bitly_tags)
-
-    assert bitlink == bitly_bitlink
-    mock_requests.request.assert_called_once_with(
-            'POST', f'{bitly_api_url}/shorten',
-            json={"long_url": bitly_long_url, "tags": bitly_tags},
-            headers={'Authorization': f'Bearer {bitly_access_token}'})
-
-
-@patch('rumor.upstreams.bitly.requests')
-def test_create_bitlink_fail(mock_requests, bitly_access_token, bitly_long_url, bitly_api_url):
+def test_create_bitlink_fail(mock_requests, bitly_access_token, bitly_long_url,
+                             bitly_bitlink_title, bitly_api_url):
     mock_response = MagicMock()
     mock_response.status_code = 500
     mock_requests.request.return_value = mock_response
 
     with pytest.raises(UpstreamError):
-        create_bitlink(bitly_long_url, bitly_access_token)
+        create_bitlink(bitly_long_url, bitly_bitlink_title, bitly_access_token)
 
     mock_requests.request.assert_called_once_with(
             'POST', f'{bitly_api_url}/shorten',
-            json={"long_url": bitly_long_url},
+            json={
+                "long_url": bitly_long_url,
+                "title": bitly_bitlink_title
+            },
             headers={'Authorization': f'Bearer {bitly_access_token}'})
 
 

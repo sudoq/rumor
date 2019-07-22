@@ -27,21 +27,22 @@ def bitly_bitlink_id():
 
 
 @pytest.fixture
-def bitly_tags():
-    return ["these", "are", "some", "tags"]
-
-
-@pytest.fixture
 def bitly_bitlink_link(bitly_bitlink_id):
     return f"http://{bitly_bitlink_id}"
 
 
 @pytest.fixture
-def bitly_bitlink(bitly_bitlink_id, bitly_bitlink_link, bitly_long_url):
+def bitly_bitlink_title():
+    return "This is the title"
+
+
+@pytest.fixture
+def bitly_bitlink(bitly_bitlink_id, bitly_bitlink_link, bitly_long_url, bitly_bitlink_title):
     return {
         "id": bitly_bitlink_id,
         "link": bitly_bitlink_link,
-        "long_url": bitly_long_url
+        "long_url": bitly_long_url,
+        "title": bitly_bitlink_title
     }
 
 

@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import List
 from urllib.parse import urlencode
 
 import requests
@@ -8,10 +7,11 @@ from logzero import logger
 from rumor.exceptions import UpstreamError
 
 
-def create_bitlink(long_url: str, access_token: str, tags: List[str] = None):
-    body = {'long_url': long_url}
-    if tags is not None:
-        body['tags'] = tags
+def create_bitlink(long_url: str, title: str, access_token: str):
+    body = {
+        'long_url': long_url,
+        'title': title
+    }
     return _call('POST', '/shorten', access_token, body=body)
 
 

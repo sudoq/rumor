@@ -1,10 +1,13 @@
 from datetime import datetime, timedelta
+from decimal import Decimal
 from typing import Any, Dict, List
 
 import pytz
 from dateutil.parser import parse as parse_date
 from logzero import logger
 
+from rumor.domain.classification import extract_keywords
+from rumor.upstreams.aws import get_preferences, store_preference
 from rumor.upstreams.bitly import (get_bitlink_clicks, get_bitlinks,
                                    get_primary_group_guid)
 
@@ -59,9 +62,23 @@ def _get_clicked_bitlinks_in_period(bitly_access_token: str, bitlinks: List[Dict
 
 
 def _update_preferences(bitlinks: List[Dict[str, Any]], preference_table_name: str) -> None:
+    preferences = get_preferences(preference_table_name)
+    keywords_with_weights = {
+        pref['preference_key']: pref['preference_weight']
+        for pref in preferences
+    }
     for bitlink in bitlinks:
-        keywords = bitlink['tags']
+        title = bitlink.get('title')
+        if title is None:
+            logger.warning(f"No title found for bitlink with id \"{bitlink['id']}\"")
+            continue
+
+        keywords = extract_keywords(title)
         if not keywords:
             logger.warning(f"No keywords found for bitlink with id \"{bitlink['id']}\"")
             continue
-        logger.info(f'SIMULATED UPDATE OF PREFERENCES: {keywords}')
+        logger.info(f'Adding {keywords} to preferences')
+        for keyword in keywords:
+            weight = keywords_with_weights.get(keyword, Decimal(1.0))
+            weight += Decimal(0.25)
+            store_preference(keyword, weight, preference_table_name)

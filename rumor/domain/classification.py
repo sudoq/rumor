@@ -7,7 +7,7 @@ from logzero import logger
 
 from rumor.upstreams.aws import delete_messages, get_messages, store_item
 
-KEYWORD_PATTERN = re.compile("[a-zA-Z]{2,}")
+KEYWORD_PATTERN = re.compile("[a-zA-Z-]{2,}")
 EXCLUDED_FILES_PATH = 'rumor/files/excluded_words.txt'
 
 
