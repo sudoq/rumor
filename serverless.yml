@@ -131,7 +131,7 @@ functions:
       - schedule: "cron(0 12 * * ? *)"
   feedback:
     handler: rumor.interfaces.handlers.feedback_handler
-    timeout: 30
+    timeout: 300
     events:
       - schedule: "cron(0 12 * * ? *)"
 
