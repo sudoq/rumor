@@ -71,7 +71,7 @@ The steady state was {% if steady_states[stage].steady_state_met -%}
  **MET**
 {%- else -%}
  **NOT MET**
-{%- endif %} before the experiment was executed.
+{%- endif %} {{ stage }} the experiment was executed.
 
 {% for step in steady_states[stage].probes %}
 **{{ step.activity.type | capitalize }} - {{ step.activity.name }}**
