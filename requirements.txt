@@ -1,9 +1,5 @@
 boto3
-click
-flake8
-isort
 jinja2
 logzero
-pytest
 pytz
 requests

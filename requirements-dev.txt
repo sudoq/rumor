@@ -1,2 +1,6 @@
 chaostoolkit
 chaostoolkit_aws
+click
+flake8
+isort
+pytest

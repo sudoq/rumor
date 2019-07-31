@@ -1,4 +1,0 @@
-click
-flake8
-isort
-jinja2

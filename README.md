@@ -27,7 +27,6 @@ Rumor is an email newsletter subscription service that periodically sends an alg
 
 ### Requirements
 * AWS Account
-* Docker
 * Node.js
 * Linux or OSX
 * Python 3.6+
@@ -39,6 +38,7 @@ To use the Command-Line Interface, create a python virtual environment and insta
 $ virtualenv venv -p python3
 $ source venv/bin/activate
 $ pip install -r requirements.txt
+$ pip install -r requirements-dev.txt
 $ python cli.py --help
 ```
 
@@ -74,27 +74,24 @@ $ python cli.py create keyword serverless --weight 2.5
 
 ## Chaos Experiments
 
-The following section describes how to setup and run Chaos Experiments.
+To run a chaos experiment, make sure you have installed the [Chaos Toolkit](https://chaostoolkit.org/) and the Chaos Toolkit AWS extension in a python environment. This can be achived by following the installation steps required for installing the Command-Line Interface `cli.py`, see [Installation](#installation).
 
-Setup the python environment required for the Command-Line Interface `cli.py`, see [Installation](#installation), and make sure Docker is running as the experiments are built and executed using Docker.
+All experiments JSON files are located in the `chaos_experiments` directory.
 
-List all chaos experiments
-```
-$ python cli.py get experiments
-```
+### Example
+To run the `discovery_change_memory_size.json` experiment, navigate to the `chaos_experiments` directory and run the following command:
 
-Build and run the `discovery_reduce_memory_size` experiment. The experiment will invoke the `discovery` lambda function with reduced memory size settings.
 ```
-$ python cli.py build experiment discovery_reduce_memory_size
-$ python cli.py run experiment discovery_reduce_memory_size
+$ chaos run discovery_change_memory_size.json
 ```
 
-To generate a markdown report of the conducted experiment, run the following command.
-```
-$ python cli.py create experiment-report discovery_reduce_memory_size
-```
+This will run the experiments and create journal and log files in the current directory.
 
-The [Chaos Toolkit](https://chaostoolkit.org/) is used to setup and run the experiments.
+For more information about the Chaos Toolkit `chaos` command, run the following command:
+
+```
+$ chaos --help
+```
 
 ## Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.

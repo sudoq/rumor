@@ -1,13 +1,13 @@
 {
-	"version": "1.0.0",
-	"title": "Discovery function: Reduce memory size",
-	"description": "N/A",
-	"tags": [],
+	"version": "0.0.1",
+	"title": "{{ function_name }} function: Reduce memory size",
+	"description": "{{ description }}",
+	"tags": {{ tags | to_json }},
 	"configuration": {
-		"aws_region": "eu-central-1"
+		"aws_region": "{{ aws_region }}"
 	},
 	"steady-state-hypothesis": {
-		"title": "Steady state check for discovery function",
+		"title": "Steady state check for {{ function_name }} function",
 		"probes": [
 			{
 				"type": "probe",
@@ -17,7 +17,7 @@
 					"module": "chaosaws.cloudwatch.probes",
 					"func": "get_alarm_state_value",
 					"arguments": {
-						"alarm_name": "discovery-function-health-production"
+						"alarm_name": "{{ function_name }}-function-health-production"
 					}
 				},
 				"tolerance": "OK"
