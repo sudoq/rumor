@@ -1,2 +1,0 @@
-chaostoolkit
-chaostoolkit_aws
