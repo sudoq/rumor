@@ -27,6 +27,7 @@ Rumor is an email newsletter subscription service that periodically sends an alg
 
 ### Requirements
 * AWS Account
+* Docker
 * Node.js
 * Linux or OSX
 * Python 3.6+
