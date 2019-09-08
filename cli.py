@@ -12,8 +12,7 @@ FUNCTION_NAMES = [
     'inspection',
     'classification',
     'evaluation',
-    'report',
-    'feedback'
+    'report'
 ]
 
 

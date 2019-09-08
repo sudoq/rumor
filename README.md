@@ -45,12 +45,10 @@ $ python cli.py --help
 
 ### Configuration
 In order to get the system up and running, you need to store the following information in AWS SSM Parameter Store:
-- An target administrator email (Used for receiving CloudWatch alerts)
-- Bitly access token (Used for generating bitly links)
+- A target administrator email (Used for receiving CloudWatch alerts)
 
-Before deploying the application you need to configure these parameters with the following commands:
+Before deploying the application you need to configure this parameter with the following command:
 ```
-aws ssm put-parameter --name rumorBitlyAccessToken --type String --value myBitlyAccessToken
 aws ssm put-parameter --name rumorAdminEmail --type String --value foobar@example.com
 ```
 
