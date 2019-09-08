@@ -11,7 +11,7 @@ Algorithmically curated technology newsletters.
 - [License](#license)
 
 ## Introduction
-[![CI status](https://travis-ci.com/SudoQ/rumor.svg?branch=master)](https://travis-ci.com/SudoQ/rumor)
+[![CircleCI](https://circleci.com/gh/SudoQ/rumor/tree/master.svg?style=svg)](https://circleci.com/gh/SudoQ/rumor/tree/master)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 Rumor is an email newsletter subscription service that periodically sends an algorithmically curated newsletter based on news items posted on the social news website [Hacker News](https://news.ycombinator.com/).
