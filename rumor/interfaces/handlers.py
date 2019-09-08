@@ -1,8 +1,7 @@
 import os
 from typing import Any, Dict
 
-from rumor.domain import (classify, discover, evaluate, inspect,
-                          process_feedback, send_reports)
+from rumor.domain import classify, discover, evaluate, inspect, send_reports
 
 
 def discovery_handler(event: Dict[str, Any], context: Dict[str, Any]) -> None:
@@ -78,8 +77,6 @@ def evaluation_handler(event: Dict[str, Any], context: Dict[str, Any]) -> None:
     preference_table_name = event.get(
         'preference_table_name', os.environ.get(
             'RUMOR_PREFERENCE_TABLE_NAME', 'rumor-dev-preferences'))
-    bitly_access_token = event.get(
-        'bitly_access_token', os.environ.get('RUMOR_BITLY_ACCESS_TOKEN'))
 
     evaluate(news_item_max_age_hours=news_item_max_age_hours,
              evaluation_period_hours=evaluation_period_hours,
@@ -87,8 +84,7 @@ def evaluation_handler(event: Dict[str, Any], context: Dict[str, Any]) -> None:
              qualification_limit=qualification_limit,
              news_item_table_name=news_item_table_name,
              evaluation_report_table_name=evaluation_report_table_name,
-             preference_table_name=preference_table_name,
-             bitly_access_token=bitly_access_token)
+             preference_table_name=preference_table_name)
 
 
 def report_handler(event: Dict[str, Any], context: Dict[str, Any]) -> None:
@@ -103,20 +99,3 @@ def report_handler(event: Dict[str, Any], context: Dict[str, Any]) -> None:
     send_reports(report_period_hours=report_period_hours,
                  evaluation_report_table_name=evaluation_report_table_name,
                  topic_arn_hint=topic_arn_hint)
-
-
-def feedback_handler(event: Dict[str, Any], context: Dict[str, Any]) -> None:
-    preference_table_name = event.get(
-        'preference_table_name', os.environ.get(
-            'RUMOR_PREFERENCE_TABLE_NAME', 'rumor-dev-preferences'))
-    feedback_period_hours = event.get('feedback_period_hours', int(os.environ.get(
-        'RUMOR_FEEDBACK_PERIOD_HOURS', '24')))
-    feedback_max_age_hours = event.get('feedback_max_age_hours', int(os.environ.get(
-        'RUMOR_FEEDBACK_MAX_AGE_HOURS', '720')))
-    bitly_access_token = event.get(
-        'bitly_access_token', os.environ.get('RUMOR_BITLY_ACCESS_TOKEN'))
-    process_feedback(
-            preference_table_name=preference_table_name,
-            feedback_period_hours=feedback_period_hours,
-            feedback_max_age_hours=feedback_max_age_hours,
-            bitly_access_token=bitly_access_token)

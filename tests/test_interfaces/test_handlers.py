@@ -2,8 +2,7 @@ from unittest.mock import patch
 
 from rumor.interfaces.handlers import (classification_handler,
                                        discovery_handler, evaluation_handler,
-                                       feedback_handler, inspection_handler,
-                                       report_handler)
+                                       inspection_handler, report_handler)
 
 
 @patch('rumor.interfaces.handlers.os')
@@ -57,8 +56,7 @@ def test_evaluation_handler(mock_evaluate, mock_os):
         news_item_max_age_hours=48,
         news_item_table_name='rumor-dev-news-items',
         qualification_limit=10,
-        qualification_threshold=1.5,
-        bitly_access_token=None
+        qualification_threshold=1.5
     )
 
 
@@ -72,15 +70,3 @@ def test_report_handler(mock_report, mock_os):
         report_period_hours=24,
         topic_arn_hint='rumor-dev-notification-topic'
     )
-
-
-@patch('rumor.interfaces.handlers.os')
-@patch('rumor.interfaces.handlers.process_feedback')
-def test_feedback_handler(mock_process_feedback, mock_os):
-    mock_os.environ = {}
-    feedback_handler({}, {})
-    mock_process_feedback.assert_called_once_with(
-        preference_table_name='rumor-dev-preferences',
-        feedback_period_hours=24,
-        feedback_max_age_hours=720,
-        bitly_access_token=None)

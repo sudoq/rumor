@@ -7,7 +7,6 @@ from typing import Any, Dict, List
 from logzero import logger
 
 from rumor.upstreams.aws import get_news_items, get_preferences, store_item
-from rumor.upstreams.bitly import create_bitlink
 
 
 def evaluate(news_item_table_name: str,
@@ -16,8 +15,7 @@ def evaluate(news_item_table_name: str,
              news_item_max_age_hours: int = 24,
              evaluation_period_hours: int = 72,
              qualification_threshold: float = 1.5,
-             qualification_limit: int = 10,
-             bitly_access_token: str = None) -> Dict[str, Any]:
+             qualification_limit: int = 10) -> Dict[str, Any]:
 
     now = datetime.now()
     created_at_to = now - timedelta(hours=news_item_max_age_hours)
@@ -25,6 +23,7 @@ def evaluate(news_item_table_name: str,
 
     news_items = get_news_items(news_item_table_name, created_at_from,
                                 created_at_to)
+
     preferences = get_preferences(preference_table_name)
     qualifying_news_items = perform_news_item_qualification(
         news_items,
@@ -32,12 +31,9 @@ def evaluate(news_item_table_name: str,
         qualification_limit,
         preferences)
 
-    news_items_with_feedback_links = add_feedback_links(qualifying_news_items,
-                                                        bitly_access_token)
-
     evaluation_report = {
         'created_at': int(now.timestamp()),
-        'news_items': news_items_with_feedback_links,
+        'news_items': qualifying_news_items,
         'config': {
             'RUMOR_NEWS_ITEM_MAX_AGE_HOURS': Decimal(news_item_max_age_hours),
             'RUMOR_EVALUATION_PERIOD_HOURS': Decimal(evaluation_period_hours),
@@ -110,15 +106,3 @@ def create_highscore_map(news_items: List[Dict[str, Any]]
             if score > results[news_item_id]['score']:
                 results[news_item_id] = news_item
     return results
-
-
-def add_feedback_links(news_items: List[Dict[str, Any]],
-                       bitly_access_token: str) -> List[Dict[str, Any]]:
-    for ni in news_items:
-        ni['feedback_url'] = create_feedback_link(ni, bitly_access_token)
-    return news_items
-
-
-def create_feedback_link(news_item: Dict[str, Any], bitly_access_token: str) -> str:
-    bitlink = create_bitlink(news_item['url'], news_item['title'], bitly_access_token)
-    return bitlink['link']
