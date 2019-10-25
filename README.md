@@ -38,8 +38,7 @@ To use the Command-Line Interface, create a python virtual environment and insta
 ```
 $ virtualenv venv -p python3
 $ source venv/bin/activate
-$ pip install -r requirements.txt
-$ pip install -r requirements-dev.txt
+$ pip install -r requirements.txt -r requirements-dev.txt
 $ python cli.py --help
 ```
 

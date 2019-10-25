@@ -1,5 +1,18 @@
-boto3
-jinja2
-logzero
-pytz
-requests
+boto3==1.9.235
+botocore==1.12.235
+certifi==2019.9.11
+chardet==3.0.4
+docutils==0.15.2
+idna==2.8
+Jinja2==2.10.1
+jmespath==0.9.4
+logzero==1.5.0
+MarkupSafe==1.1.1
+python-dateutil==2.8.0
+pytz==2019.2
+requests==2.22.0
+s3transfer==0.2.1
+six==1.12.0
+urllib3==1.25.6
+setuptools
+-e .
