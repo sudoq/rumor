@@ -230,7 +230,6 @@ tags
 [._]*.un~
 
 # End of https://www.gitignore.io/api/vim,python,node
-package-lock.json
 
 # Serverless directories
 .serverless
